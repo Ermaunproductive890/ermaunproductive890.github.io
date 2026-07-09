@@ -216,6 +216,15 @@
     return r;
   }
 
+  // lê a explicação que o GitHub manda quando dá erro
+  async function motivoErro(r) {
+    try {
+      const j = await r.json();
+      if (j && j.message) return j.message;
+    } catch (e) {}
+    return 'erro ' + r.status;
+  }
+
   // ---------- login ----------
   $('entrar').addEventListener('click', entrar);
   $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
@@ -308,7 +317,7 @@
             (a.url ? '<video src="' + a.url + '" muted playsinline style="max-height:150px;border:1px solid var(--line);border-radius:8px" controls></video>' : '<span style="color:var(--ink-dim)">Nenhum vídeo</span>') +
             '<button class="up">Escolher vídeo</button><input type="file" accept="video/*">' +
           '</div>' +
-          '<p style="font-size:.8rem;color:var(--ink-dim);margin-top:8px">Dica: vídeos curtos (15–30s) e leves (até 45 MB) funcionam melhor. O som fica desligado na tela.</p>';
+          '<p style="font-size:.8rem;color:var(--ink-dim);margin-top:8px">Dica: vídeos curtos (15–30s) e leves (até 24 MB) funcionam melhor. O som fica desligado na tela.</p>';
         const inp = corpo.querySelector('input[type=file]');
         corpo.querySelector('.up').addEventListener('click', () => inp.click());
         inp.addEventListener('change', () => enviarVideo(inp.files[0], 'anuncios', (url) => { a.url = url; desenhar(); marcarMudou(); }));
@@ -441,7 +450,7 @@
 
   // ---------- upload de arquivo (imagem ou vídeo) ----------
   function enviarImagem(file, pasta, cb) { return enviarArquivo(file, pasta, 4, 'imagem', cb); }
-  function enviarVideo(file, pasta, cb) { return enviarArquivo(file, pasta, 45, 'vídeo', cb); }
+  function enviarVideo(file, pasta, cb) { return enviarArquivo(file, pasta, 24, 'vídeo', cb); }
 
   async function enviarArquivo(file, pasta, maxMB, rotulo, cb) {
     if (!file) return;
@@ -461,11 +470,11 @@
         method: 'PUT',
         body: JSON.stringify({ message: 'painel: ' + rotulo + ' ' + nome, content: b64 })
       });
-      if (!r.ok) throw new Error('erro ' + r.status);
+      if (!r.ok) throw new Error(await motivoErro(r));
       cb(nome); // caminho relativo que o player entende
       toast(rotulo.charAt(0).toUpperCase() + rotulo.slice(1) + ' enviado!');
     } catch (e) {
-      toast('Falha ao enviar o ' + rotulo + ' (' + e.message + ')', true);
+      toast('Falha ao enviar o ' + rotulo + ': ' + e.message, true);
     }
   }
 
@@ -481,7 +490,7 @@
       });
       if (!r.ok) {
         if (r.status === 409) throw new Error('Conteúdo mudou em outro lugar. Recarregue a página.');
-        throw new Error('erro ' + r.status);
+        throw new Error(await motivoErro(r));
       }
       const j = await r.json();
       sha = j.content.sha;
