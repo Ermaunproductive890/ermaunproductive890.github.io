@@ -11,10 +11,21 @@ const types = { '.html': 'text/html; charset=utf-8', '.json': 'application/json;
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/noticias.json') {
-    https.get('https://g1.globo.com/rss/g1/', { headers: { 'User-Agent': 'Mozilla/5.0 (OnScreenPlayer)' } }, (r) => {
-      let xml = '';
-      r.on('data', (c) => (xml += c));
+    const FONTES = {
+      g1: 'https://g1.globo.com/rss/g1/',
+      uol: 'https://rss.uol.com.br/feed/noticias.xml',
+      cnn: 'https://www.cnnbrasil.com.br/feed/',
+    };
+    let fonte = FONTES.uol;
+    try { fonte = FONTES[JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8')).fonteNoticias] || FONTES.uol; } catch (e) {}
+    https.get(fonte, { headers: { 'User-Agent': 'Mozilla/5.0 (OnScreenPlayer)' } }, (r) => {
+      const chunks = [];
+      r.on('data', (c) => chunks.push(c));
       r.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        let xml = buf.toString('utf8');
+        const tipo = (r.headers['content-type'] || '') + ' ' + xml.slice(0, 200);
+        if (/8859|latin/i.test(tipo)) xml = buf.toString('latin1');
         const noticias = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
           const t = m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
           const img = m[1].match(/<media:content[^>]*url="([^"]+)"/);
