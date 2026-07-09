@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OnScreen — Painel</title>
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg:#eef1f5; --card:#ffffff; --ink:#182635; --ink-dim:#5b6b7c;
+    --line:#dce2ea; --blue:#1462c4; --blue-deep:#0d3f80;
+    --ok:#2e9e6b; --warn:#c98a1f; --danger:#c9443a; --gold:#e0a63c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+  button{font-family:inherit;cursor:pointer}
+  input,textarea,select{font-family:inherit;font-size:1rem}
+
+  /* topo */
+  header{
+    background:var(--blue-deep);color:#fff;padding:14px 18px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10;
+  }
+  header .logo{font-size:1.2rem;font-weight:800}
+  header .logo span{color:#a9c9f0}
+  header .right{display:flex;align-items:center;gap:10px}
+  header button{background:rgba(255,255,255,.15);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:.85rem}
+  header button:hover{background:rgba(255,255,255,.28)}
+
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 120px}
+
+  /* login */
+  .login{max-width:520px;margin:8vh auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px}
+  .login h1{font-size:1.4rem;margin-bottom:6px}
+  .login p{color:var(--ink-dim);font-size:.92rem;margin-bottom:18px}
+  .login label{display:block;font-weight:600;font-size:.9rem;margin:14px 0 6px}
+  .login input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+  .login .btn{width:100%;margin-top:18px;background:var(--blue);color:#fff;border:none;padding:14px;border-radius:10px;font-size:1rem;font-weight:700}
+  .login .btn:hover{background:var(--blue-deep)}
+  .login details{margin-top:18px;font-size:.9rem;color:var(--ink-dim)}
+  .login details summary{cursor:pointer;color:var(--blue);font-weight:600}
+  .login details ol{margin:10px 0 0 18px;display:flex;flex-direction:column;gap:6px}
+  .login details a{color:var(--blue)}
+  .login .erro{color:var(--danger);font-size:.9rem;margin-top:12px;font-weight:600;display:none}
+
+  /* seções */
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .tabs button{background:var(--card);border:1px solid var(--line);padding:10px 16px;border-radius:10px;font-size:.92rem;font-weight:600;color:var(--ink-dim)}
+  .tabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+  section{display:none}
+  section.on{display:block}
+
+  .sechead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .sechead h2{font-size:1.15rem}
+  .add{background:var(--ok);color:#fff;border:none;padding:9px 15px;border-radius:9px;font-size:.9rem;font-weight:700}
+  .add:hover{filter:brightness(1.08)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .card .row:last-of-type{margin-bottom:0}
+  .field{flex:1;min-width:140px}
+  .field.full{flex-basis:100%}
+  .field label{display:block;font-size:.78rem;font-weight:700;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px}
+  .field textarea{resize:vertical;min-height:70px}
+  .card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px}
+  .card .tipo{display:flex;gap:6px}
+  .card .tipo button{background:#eef2f7;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:.82rem;font-weight:600;color:var(--ink-dim)}
+  .card .tipo button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .remove{background:none;border:1px solid var(--danger);color:var(--danger);padding:7px 13px;border-radius:8px;font-size:.85rem;font-weight:600}
+  .remove:hover{background:var(--danger);color:#fff}
+
+  .imgbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .imgbox img{max-height:120px;max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .imgbox .up{background:var(--blue);color:#fff;border:none;padding:9px 14px;border-radius:9px;font-size:.88rem;font-weight:600}
+  .imgbox input[type=file]{display:none}
+
+  .cores{display:flex;gap:6px;flex-wrap:wrap}
+  .cores button{width:30px;height:30px;border-radius:7px;border:2px solid transparent}
+  .cores button.on{border-color:var(--ink)}
+
+  /* barra salvar */
+  .savebar{
+    position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+    padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:20;
+  }
+  .savebar .est{font-size:.88rem;color:var(--ink-dim)}
+  .savebar .est.mud{color:var(--warn);font-weight:600}
+  .savebar .save{background:var(--ok);color:#fff;border:none;padding:13px 26px;border-radius:10px;font-size:1rem;font-weight:800}
+  .savebar .save:disabled{opacity:.5;cursor:default}
+  .savebar .save:not(:disabled):hover{filter:brightness(1.08)}
+
+  .hide{display:none!important}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:.92rem;z-index:40;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.on{opacity:1}
+  .toast.erro{background:var(--danger)}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login" class="login">
+  <h1>Painel OnScreen</h1>
+  <p>Entre com sua chave de acesso do GitHub para gerenciar as telas.</p>
+  <label for="token">Chave de acesso</label>
+  <input id="token" type="password" placeholder="github_pat_..." autocomplete="off">
+  <button class="btn" id="entrar">Entrar</button>
+  <div class="erro" id="loginErro"></div>
+  <details>
+    <summary>Como pegar minha chave? (só na primeira vez)</summary>
+    <ol>
+      <li>Abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a> (logado na conta OnScreen).</li>
+      <li>Em <b>Token name</b>, escreva: <b>Painel OnScreen</b>.</li>
+      <li>Em <b>Expiration</b>, escolha <b>No expiration</b> (sem validade).</li>
+      <li>Em <b>Repository access</b>, marque <b>Only select repositories</b> e escolha <b>onmidiascreen-dotcom.github.io</b>.</li>
+      <li>Em <b>Permissions → Repository permissions</b>, ache <b>Contents</b> e mude para <b>Read and write</b>.</li>
+      <li>Clique em <b>Generate token</b>, copie o código que aparece e cole aqui em cima.</li>
+    </ol>
+    <p style="margin-top:10px">Guarde essa chave; ela fica salva neste aparelho e você não precisa digitar de novo.</p>
+  </details>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" class="hide">
+  <header>
+    <span class="logo">On<span>Screen</span> · Painel</span>
+    <div class="right">
+      <button id="verTela">Ver a tela</button>
+      <button id="sair">Sair</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="tabs">
+      <button data-tab="prop" class="on">📺 Propagandas</button>
+      <button data-tab="com">📢 Comunicados</button>
+      <button data-tab="cfg">⚙️ Configurações</button>
+    </div>
+
+    <section id="prop" class="on">
+      <div class="sechead"><h2>Propagandas</h2><button class="add" id="addProp">+ Nova propaganda</button></div>
+      <div id="listaProp"></div>
+    </section>
+
+    <section id="com">
+      <div class="sechead"><h2>Comunicados do prédio</h2><button class="add" id="addCom">+ Novo comunicado</button></div>
+      <div id="listaCom"></div>
+    </section>
+
+    <section id="cfg">
+      <div class="sechead"><h2>Configurações</h2></div>
+      <div class="card">
+        <div class="row">
+          <div class="field full"><label>Nome do prédio</label><input id="cfgPredio"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Telefone (rodapé)</label><input id="cfgContato"></div>
+          <div class="field"><label>Fonte das notícias</label>
+            <select id="cfgFonte"><option value="uol">UOL</option><option value="cnn">CNN Brasil</option><option value="g1">G1</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Segundos por propaganda</label><input id="cfgDurAnuncio" type="number" min="3" max="60"></div>
+          <div class="field"><label>Segundos por comunicado</label><input id="cfgDurCom" type="number" min="3" max="60"></div>
+          <div class="field"><label>Segundos por notícia</label><input id="cfgDurNot" type="number" min="3" max="30"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="savebar">
+    <span class="est" id="estado">Tudo salvo</span>
+    <button class="save" id="salvar" disabled>Salvar e publicar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const OWNER = 'onmidiascreen-dotcom';
+  const REPO = 'onmidiascreen-dotcom.github.io';
+  const API = 'https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/';
+  const CORES = ['verde','dourado','azul','claro'];
+  const CORES_HEX = { verde:'#1f7a45', dourado:'#a06b1e', azul:'#1d3e7e', claro:'#e7ebf0' };
+
+  let token = localStorage.getItem('onscreen_token') || '';
+  let cfg = null, sha = null, mudou = false;
+
+  const $ = (id) => document.getElementById(id);
+  function toast(msg, erro) {
+    const t = $('toast'); t.textContent = msg; t.className = 'toast on' + (erro ? ' erro' : '');
+    setTimeout(() => { t.className = 'toast' + (erro ? ' erro' : ''); }, 3000);
+  }
+  function marcarMudou() {
+    mudou = true;
+    $('estado').textContent = 'Alterações não salvas';
+    $('estado').classList.add('mud');
+    $('salvar').disabled = false;
+  }
+  function marcarSalvo() {
+    mudou = false;
+    $('estado').textContent = 'Tudo salvo';
+    $('estado').classList.remove('mud');
+    $('salvar').disabled = true;
+  }
+
+  // base64 <-> utf8 (config tem acentos)
+  const utf8ToB64 = (s) => btoa(unescape(encodeURIComponent(s)));
+  const b64ToUtf8 = (b) => decodeURIComponent(escape(atob(b.replace(/\n/g, ''))));
+
+  async function api(path, opts) {
+    const r = await fetch(API + path, Object.assign({
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }
+    }, opts));
+    return r;
+  }
+
+  // ---------- login ----------
+  $('entrar').addEventListener('click', entrar);
+  $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
+  async function entrar() {
+    const t = $('token').value.trim();
+    if (!t) return;
+    token = t;
+    $('loginErro').style.display = 'none';
+    $('entrar').textContent = 'Entrando…';
+    try {
+      const r = await api('config.json');
+      if (r.status === 401 || r.status === 403) throw new Error('Chave inválida ou sem permissão. Confira os passos de como pegar a chave.');
+      if (!r.ok) throw new Error('Não consegui conectar (erro ' + r.status + ').');
+      const j = await r.json();
+      cfg = JSON.parse(b64ToUtf8(j.content));
+      sha = j.sha;
+      localStorage.setItem('onscreen_token', token);
+      abrirApp();
+    } catch (e) {
+      $('loginErro').textContent = e.message;
+      $('loginErro').style.display = 'block';
+    }
+    $('entrar').textContent = 'Entrar';
+  }
+
+  function abrirApp() {
+    $('login').classList.add('hide');
+    $('app').classList.remove('hide');
+    // garante campos
+    cfg.anuncios = cfg.anuncios || [];
+    cfg.comunicados = cfg.comunicados || [];
+    render();
+    marcarSalvo();
+  }
+
+  $('sair').addEventListener('click', () => {
+    if (mudou && !confirm('Você tem alterações não salvas. Sair mesmo assim?')) return;
+    localStorage.removeItem('onscreen_token');
+    location.reload();
+  });
+  $('verTela').addEventListener('click', () => window.open('./?girar=0', '_blank'));
+
+  // ---------- abas ----------
+  document.querySelectorAll('.tabs button').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('on'));
+      document.querySelectorAll('section').forEach((s) => s.classList.remove('on'));
+      b.classList.add('on');
+      $(b.dataset.tab).classList.add('on');
+    });
+  });
+
+  // ---------- render ----------
+  function render() {
+    renderProp();
+    renderCom();
+    $('cfgPredio').value = cfg.predio || '';
+    $('cfgContato').value = cfg.contato || '';
+    $('cfgFonte').value = cfg.fonteNoticias || 'uol';
+    $('cfgDurAnuncio').value = cfg.duracaoAnuncioSegundos || 8;
+    $('cfgDurCom').value = cfg.duracaoComunicadoSegundos || 10;
+    $('cfgDurNot').value = cfg.duracaoNoticiaSegundos || 8;
+  }
+
+  function renderProp() {
+    const lista = $('listaProp'); lista.innerHTML = '';
+    cfg.anuncios.forEach((a, i) => lista.appendChild(cardProp(a, i)));
+    if (!cfg.anuncios.length) lista.innerHTML = '<p style="color:var(--ink-dim)">Nenhuma propaganda ainda. Clique em “Nova propaganda”.</p>';
+  }
+
+  function cardProp(a, i) {
+    const c = document.createElement('div'); c.className = 'card';
+    const ehImg = a.tipo === 'imagem';
+    c.innerHTML =
+      '<div class="foot" style="margin-top:0;margin-bottom:12px">' +
+        '<div class="tipo">' +
+          '<button data-t="texto" class="' + (!ehImg ? 'on' : '') + '">Texto</button>' +
+          '<button data-t="imagem" class="' + (ehImg ? 'on' : '') + '">Imagem</button>' +
+        '</div>' +
+        '<button class="remove">Remover</button>' +
+      '</div>' +
+      '<div class="corpo"></div>';
+    const corpo = c.querySelector('.corpo');
+
+    function desenhar() {
+      if (a.tipo === 'imagem') {
+        corpo.innerHTML =
+          '<div class="imgbox">' +
+            (a.url ? '<img src="' + a.url + '" alt="">' : '<span style="color:var(--ink-dim)">Nenhuma imagem</span>') +
+            '<button class="up">Escolher imagem</button><input type="file" accept="image/*">' +
+          '</div>';
+        const inp = corpo.querySelector('input[type=file]');
+        corpo.querySelector('.up').addEventListener('click', () => inp.click());
+        inp.addEventListener('change', () => enviarImagem(inp.files[0], 'anuncios', (url) => { a.url = url; desenhar(); marcarMudou(); }));
+      } else {
+        corpo.innerHTML =
+          '<div class="row">' +
+            '<div class="field"><label>Etiqueta (nome do anunciante)</label><input class="f-tag"></div>' +
+          '</div>' +
+          '<div class="row"><div class="field full"><label>Título grande</label><input class="f-titulo"></div></div>' +
+          '<div class="row"><div class="field full"><label>Texto</label><textarea class="f-texto"></textarea></div></div>' +
+          '<div class="row"><div class="field full"><label>Rodapé (endereço/telefone)</label><input class="f-rodape"></div></div>' +
+          '<div class="row"><div class="field"><label>Cor de fundo</label><div class="cores"></div></div></div>';
+        corpo.querySelector('.f-tag').value = a.tag || '';
+        corpo.querySelector('.f-titulo').value = a.titulo || '';
+        corpo.querySelector('.f-texto').value = a.texto || '';
+        corpo.querySelector('.f-rodape').value = a.rodape || '';
+        corpo.querySelector('.f-tag').addEventListener('input', (e) => { a.tag = e.target.value; marcarMudou(); });
+        corpo.querySelector('.f-titulo').addEventListener('input', (e) => { a.titulo = e.target.value; marcarMudou(); });
+        corpo.querySelector('.f-texto').addEventListener('input', (e) => { a.texto = e.target.value; marcarMudou(); });
+        corpo.querySelector('.f-rodape').addEventListener('input', (e) => { a.rodape = e.target.value; marcarMudou(); });
+        const cores = corpo.querySelector('.cores');
+        CORES.forEach((cor) => {
+          const b = document.createElement('button');
+          b.style.background = CORES_HEX[cor];
+          if ((a.cor || 'azul') === cor) b.classList.add('on');
+          b.title = cor;
+          b.addEventListener('click', () => { a.cor = cor; cores.querySelectorAll('button').forEach((x) => x.classList.remove('on')); b.classList.add('on'); marcarMudou(); });
+          cores.appendChild(b);
+        });
+      }
+    }
+    desenhar();
+
+    c.querySelectorAll('.tipo button').forEach((b) => b.addEventListener('click', () => {
+      a.tipo = b.dataset.t;
+      c.querySelectorAll('.tipo button').forEach((x) => x.classList.remove('on'));
+      b.classList.add('on');
+      desenhar(); marcarMudou();
+    }));
+    c.querySelector('.remove').addEventListener('click', () => {
+      if (!confirm('Remover esta propaganda?')) return;
+      cfg.anuncios.splice(i, 1); renderProp(); marcarMudou();
+    });
+    return c;
+  }
+
+  function renderCom() {
+    const lista = $('listaCom'); lista.innerHTML = '';
+    cfg.comunicados.forEach((n, i) => lista.appendChild(cardCom(n, i)));
+    if (!cfg.comunicados.length) lista.innerHTML = '<p style="color:var(--ink-dim)">Nenhum comunicado ativo.</p>';
+  }
+
+  function cardCom(n, i) {
+    const c = document.createElement('div'); c.className = 'card';
+    const ehImg = !!n.imagem;
+    c.innerHTML =
+      '<div class="foot" style="margin-top:0;margin-bottom:12px">' +
+        '<div class="tipo">' +
+          '<button data-t="texto" class="' + (!ehImg ? 'on' : '') + '">Texto</button>' +
+          '<button data-t="imagem" class="' + (ehImg ? 'on' : '') + '">Imagem/Cartaz</button>' +
+        '</div>' +
+        '<button class="remove">Remover</button>' +
+      '</div><div class="corpo"></div>';
+    const corpo = c.querySelector('.corpo');
+    let modo = ehImg ? 'imagem' : 'texto';
+
+    function desenhar() {
+      if (modo === 'imagem') {
+        corpo.innerHTML =
+          '<div class="imgbox">' +
+            (n.imagem ? '<img src="' + n.imagem + '" alt="">' : '<span style="color:var(--ink-dim)">Nenhum cartaz</span>') +
+            '<button class="up">Escolher cartaz</button><input type="file" accept="image/*">' +
+          '</div>';
+        const inp = corpo.querySelector('input[type=file]');
+        corpo.querySelector('.up').addEventListener('click', () => inp.click());
+        inp.addEventListener('change', () => enviarImagem(inp.files[0], 'comunicados', (url) => { n.imagem = url; delete n.titulo; delete n.texto; desenhar(); marcarMudou(); }));
+      } else {
+        corpo.innerHTML =
+          '<div class="row"><div class="field full"><label>Título do aviso</label><input class="f-titulo"></div></div>' +
+          '<div class="row"><div class="field full"><label>Mensagem</label><textarea class="f-texto"></textarea></div></div>';
+        corpo.querySelector('.f-titulo').value = n.titulo || '';
+        corpo.querySelector('.f-texto').value = n.texto || '';
+        corpo.querySelector('.f-titulo').addEventListener('input', (e) => { n.titulo = e.target.value; delete n.imagem; marcarMudou(); });
+        corpo.querySelector('.f-texto').addEventListener('input', (e) => { n.texto = e.target.value; delete n.imagem; marcarMudou(); });
+      }
+    }
+    desenhar();
+
+    c.querySelectorAll('.tipo button').forEach((b) => b.addEventListener('click', () => {
+      modo = b.dataset.t;
+      c.querySelectorAll('.tipo button').forEach((x) => x.classList.remove('on'));
+      b.classList.add('on');
+      desenhar();
+    }));
+    c.querySelector('.remove').addEventListener('click', () => {
+      if (!confirm('Remover este comunicado?')) return;
+      cfg.comunicados.splice(i, 1); renderCom(); marcarMudou();
+    });
+    return c;
+  }
+
+  // ---------- adicionar ----------
+  $('addProp').addEventListener('click', () => {
+    cfg.anuncios.push({ tipo: 'texto', tag: '', titulo: 'Novo anúncio', texto: '', rodape: '', cor: 'azul' });
+    renderProp(); marcarMudou();
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  $('addCom').addEventListener('click', () => {
+    cfg.comunicados.push({ titulo: 'Novo comunicado', texto: '' });
+    renderCom(); marcarMudou();
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+
+  // ---------- config fields ----------
+  $('cfgPredio').addEventListener('input', (e) => { cfg.predio = e.target.value; marcarMudou(); });
+  $('cfgContato').addEventListener('input', (e) => { cfg.contato = e.target.value; marcarMudou(); });
+  $('cfgFonte').addEventListener('change', (e) => { cfg.fonteNoticias = e.target.value; marcarMudou(); });
+  $('cfgDurAnuncio').addEventListener('input', (e) => { cfg.duracaoAnuncioSegundos = +e.target.value || 8; marcarMudou(); });
+  $('cfgDurCom').addEventListener('input', (e) => { cfg.duracaoComunicadoSegundos = +e.target.value || 10; marcarMudou(); });
+  $('cfgDurNot').addEventListener('input', (e) => { cfg.duracaoNoticiaSegundos = +e.target.value || 8; marcarMudou(); });
+
+  // ---------- upload de imagem ----------
+  async function enviarImagem(file, pasta, cb) {
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) { toast('Imagem muito grande (máx 4 MB). Reduza e tente de novo.', true); return; }
+    toast('Enviando imagem…');
+    const nome = pasta + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
+    const b64 = await new Promise((res) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result.split(',')[1]);
+      fr.readAsDataURL(file);
+    });
+    try {
+      const r = await api(nome, {
+        method: 'PUT',
+        body: JSON.stringify({ message: 'painel: imagem ' + nome, content: b64 })
+      });
+      if (!r.ok) throw new Error('erro ' + r.status);
+      cb(nome); // caminho relativo que o player entende
+      toast('Imagem enviada!');
+    } catch (e) {
+      toast('Falha ao enviar a imagem (' + e.message + ')', true);
+    }
+  }
+
+  // ---------- salvar ----------
+  $('salvar').addEventListener('click', salvar);
+  async function salvar() {
+    $('salvar').disabled = true; $('salvar').textContent = 'Salvando…';
+    try {
+      const conteudo = utf8ToB64(JSON.stringify(cfg, null, 2));
+      const r = await api('config.json', {
+        method: 'PUT',
+        body: JSON.stringify({ message: 'painel: atualiza conteúdo', content: conteudo, sha: sha })
+      });
+      if (!r.ok) {
+        if (r.status === 409) throw new Error('Conteúdo mudou em outro lugar. Recarregue a página.');
+        throw new Error('erro ' + r.status);
+      }
+      const j = await r.json();
+      sha = j.content.sha;
+      marcarSalvo();
+      toast('Publicado! As telas atualizam em até 5 minutos.');
+    } catch (e) {
+      toast('Não consegui salvar (' + e.message + ')', true);
+      $('salvar').disabled = false;
+    }
+    $('salvar').textContent = 'Salvar e publicar';
+  }
+
+  window.addEventListener('beforeunload', (e) => { if (mudou) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- auto-login se já tem chave salva ----------
+  if (token) { $('token').value = token; entrar(); }
+})();
+</script>
+</body>
+</html>
