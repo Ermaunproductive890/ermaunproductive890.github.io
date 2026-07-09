@@ -3,7 +3,7 @@
   "cidade": { "nome": "Arapongas", "lat": -23.42, "lon": -51.42 },
   "contato": "(43) 98874-1575",
   "duracaoAnuncioSegundos": 8,
-  "noticiaNaRotacao": true,
+  "duracaoNoticiaSegundos": 8,
   "duracaoComunicadoSegundos": 10,
   "anuncios": [
     {

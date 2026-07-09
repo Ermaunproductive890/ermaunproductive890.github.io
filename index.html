@@ -17,11 +17,12 @@
   .tv{
     width:100vw;height:100vh;background:#f7f8fa;
     display:grid;
-    grid-template-rows:5.5vh 55fr 5vh 45fr 4.5vh;
-    grid-template-areas:"topbar" "media" "brand" "board" "ticker";
+    grid-template-rows:5.5vh 55fr 10vh 45fr 4vh;
+    grid-template-areas:"topbar" "media" "news" "board" "foot";
     cursor:none;
   }
 
+  /* barra do topo: clima + cotação + hora */
   .topbar{
     grid-area:topbar;background:var(--bar);color:var(--bar-text);
     display:flex;align-items:center;gap:.8vh;padding:0 1.6vh;
@@ -34,6 +35,7 @@
     padding:.5vh 1.4vh;margin-left:1.2vh;font-size:2.7vh;letter-spacing:.02em;
   }
 
+  /* propaganda (55%) */
   .media{grid-area:media;position:relative;overflow:hidden;background:#eceff3}
   .ad{
     position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -54,24 +56,25 @@
   .ad.claro h2{letter-spacing:.04em;text-transform:uppercase}
   .ad.claro p{color:var(--ink-dim);text-transform:uppercase;letter-spacing:.12em;font-size:1.8vh}
   .ad.claro .cta{color:var(--blue)}
-  .ad.news{padding:0;background:#101820}
-  .ad.news img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  .ad.news .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 40%,rgba(0,0,0,.88))}
-  .ad.news .ninfo{position:absolute;left:0;right:0;bottom:0;padding:0 3vh 3.2vh;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:1.2vh}
-  .ad.news .chip{background:#e0632c;color:#fff;font-size:1.6vh;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.5vh 1.2vh;border-radius:.5vh}
-  .ad.news h2{color:#fff;font-size:3.3vh;line-height:1.2;text-align:left;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.6)}
   .progress{position:absolute;left:0;bottom:0;height:.5vh;background:var(--gold);width:0%;z-index:2}
   .progress.run{animation:fill var(--dur,8s) linear forwards}
   @keyframes fill{from{width:0}to{width:100%}}
 
-  .brand{
-    grid-area:brand;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-    display:flex;align-items:center;justify-content:space-between;padding:0 1.8vh;
+  /* faixa de notícia (manchete sempre visível, estilo referência) */
+  .newsband{
+    grid-area:news;background:var(--bar);color:#fff;
+    display:flex;align-items:stretch;overflow:hidden;
   }
-  .brand .logo{font-size:2.6vh;font-weight:800;color:var(--blue)}
-  .brand .logo span{color:var(--ink)}
-  .brand .fone{font-size:2.1vh;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+  .newsband .nbimg{flex:none;width:14vh;background:#0a1220;position:relative}
+  .newsband .nbimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .newsband .nbtxt{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:.7vh;padding:0 1.8vh}
+  .newsband .nbchip{align-self:flex-start;background:#e0632c;color:#fff;font-size:1.4vh;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.3vh 1vh;border-radius:.4vh}
+  .newsband p{
+    font-size:2.2vh;line-height:1.25;font-weight:600;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
 
+  /* comunicado (45%) */
   .board{grid-area:board;background:#fff;padding:1.6vh 1.8vh 1.2vh;display:flex;flex-direction:column;gap:1.1vh;min-height:0}
   .board .head{
     background:var(--blue-deep);color:#fff;border-radius:.8vh;padding:1vh 1.6vh;
@@ -88,17 +91,16 @@
   .status.off .dot{background:var(--warn)}
   .status.off{color:var(--warn)}
 
-  .ticker{grid-area:ticker;background:var(--bar);display:flex;align-items:center;overflow:hidden}
-  .ticker .cap{
-    flex:none;height:100%;display:flex;align-items:center;padding:0 1.6vh;
-    background:var(--gold);color:#231a08;font-size:1.7vh;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  /* rodapé com a marca */
+  .foot{
+    grid-area:foot;background:#fff;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;padding:0 1.8vh;
   }
-  .rail{flex:1;overflow:hidden}
-  .rail-inner{display:inline-flex;white-space:nowrap;animation:slide 60s linear infinite}
-  .rail-inner span{font-size:2.2vh;padding:0 3.4vh;color:#e8eef6}
-  @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .foot .logo{font-size:2vh;font-weight:800;color:var(--blue)}
+  .foot .logo span{color:var(--ink)}
+  .foot .fone{font-size:1.8vh;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+
   @media (prefers-reduced-motion:reduce){
-    .rail-inner{animation:none}
     .progress.run{animation:none;width:100%}
     .ad{transition:none}
   }
@@ -111,11 +113,17 @@
     <span class="fx" id="fx"></span>
     <span class="clock" id="time">--:--</span>
   </div>
+
   <div class="media" id="media"><div class="progress" id="progress"></div></div>
-  <div class="brand">
-    <span class="logo">On<span>Screen</span></span>
-    <span class="fone" id="fone"></span>
+
+  <div class="newsband">
+    <div class="nbimg"><img id="nbImg" alt="" style="display:none"></div>
+    <div class="nbtxt">
+      <span class="nbchip">Notícias · G1</span>
+      <p id="nbTitle">Carregando notícias…</p>
+    </div>
   </div>
+
   <div class="board">
     <div class="head"><span id="predio"></span><span>Comunicados</span></div>
     <div class="notice">
@@ -127,9 +135,10 @@
       <span class="status" id="status"><span class="dot"></span><span id="statusTxt">Iniciando…</span></span>
     </div>
   </div>
-  <div class="ticker">
-    <span class="cap">Notícias</span>
-    <div class="rail"><div class="rail-inner" id="rail"></div></div>
+
+  <div class="foot">
+    <span class="logo">On<span>Screen</span></span>
+    <span class="fone" id="fone"></span>
   </div>
 </div>
 
@@ -177,16 +186,6 @@
 
   // ---------- configuração (anúncios + comunicados) ----------
   let cfg = null, adTimer = null, noticeTimer = null;
-  let noticiasLista = [], nIdx = 0;
-
-  function popularNoticia(el) {
-    if (!noticiasLista.length) return;
-    const n = noticiasLista[nIdx % noticiasLista.length]; nIdx++;
-    el.querySelector('h2').textContent = n.titulo;
-    const img = el.querySelector('img');
-    if (n.imagem) { img.src = n.imagem; img.style.display = 'block'; }
-    else { img.removeAttribute('src'); img.style.display = 'none'; }
-  }
 
   function renderAnuncios() {
     const media = document.getElementById('media');
@@ -209,26 +208,16 @@
       media.insertBefore(d, progress);
       return d;
     });
-    // cartão de notícia com foto (estilo Eletromidia) entra na rotação
-    if (cfg.noticiaNaRotacao !== false && noticiasLista.length) {
-      const d = document.createElement('div');
-      d.className = 'ad news'; d.id = 'adNews';
-      d.innerHTML = '<img alt=""><div class="shade"></div><div class="ninfo"><span class="chip">Notícias · G1</span><h2></h2></div>';
-      media.insertBefore(d, progress);
-      ads.push(d);
-    }
     if (!ads.length) return;
     const DUR = (cfg.duracaoAnuncioSegundos || 8) * 1000;
     progress.style.setProperty('--dur', DUR + 'ms');
     let cur = 0;
-    if (ads[0].id === 'adNews') popularNoticia(ads[0]);
     ads[0].classList.add('on');
     progress.classList.add('run');
     clearInterval(adTimer);
     adTimer = setInterval(() => {
       ads[cur].classList.remove('on');
       cur = (cur + 1) % ads.length;
-      if (ads[cur].id === 'adNews') popularNoticia(ads[cur]);
       ads[cur].classList.add('on');
       progress.classList.remove('run'); void progress.offsetWidth; progress.classList.add('run');
     }, DUR);
@@ -287,15 +276,27 @@
   }
   setInterval(girarCotacao, 6000);
 
-  // ---------- notícias (noticias.json, atualizado pelo GitHub Actions) ----------
+  // ---------- notícias: faixa fixa com manchete + foto ----------
+  let noticiasLista = [], nIdx = 0, newsTimer = null;
+  function girarNoticia() {
+    if (!noticiasLista.length) return;
+    const n = noticiasLista[nIdx % noticiasLista.length]; nIdx++;
+    document.getElementById('nbTitle').textContent = n.titulo;
+    const img = document.getElementById('nbImg');
+    if (n.imagem) { img.src = n.imagem; img.style.display = 'block'; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
+  }
   async function atualizarNoticias() {
     const v = await buscar('noticias', 'noticias.json?v=' + Date.now(), (j) => j.noticias);
     noticiasLista = (v || []).map(n => typeof n === 'string' ? { titulo: n } : n);
-    const titulos = noticiasLista.length ? noticiasLista.map(n => n.titulo) : ['Notícias indisponíveis no momento'];
-    const html = titulos.map(t => { const s = document.createElement('span'); s.textContent = t; return s.outerHTML }).join('');
-    document.getElementById('rail').innerHTML = html + html;
-    // se o cartão de notícias ainda não existe na rotação, recria os anúncios
-    if (cfg && noticiasLista.length && !document.getElementById('adNews')) renderAnuncios();
+    if (!noticiasLista.length) {
+      document.getElementById('nbTitle').textContent = 'Notícias indisponíveis no momento';
+      return;
+    }
+    if (!newsTimer) {
+      girarNoticia();
+      newsTimer = setInterval(girarNoticia, ((cfg && cfg.duracaoNoticiaSegundos) || 8) * 1000);
+    }
   }
 
   // ---------- inicialização e ciclos de atualização ----------
@@ -307,7 +308,6 @@
       renderAnuncios(); renderComunicados();
     }
     await atualizarConfig();
-    if (!cfg) { renderAnuncios && pintarStatus(); }
     atualizarClima(); atualizarCotacoes(); atualizarNoticias();
     girarCotacao();
   })();
