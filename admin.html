@@ -185,7 +185,7 @@
   const CORES_HEX = { verde:'#1f7a45', dourado:'#a06b1e', azul:'#1d3e7e', claro:'#e7ebf0' };
 
   let token = localStorage.getItem('onscreen_token') || '';
-  let cfg = null, sha = null, mudou = false;
+  let cfg = null, sha = null, mudou = false, enviando = 0;
 
   const $ = (id) => document.getElementById(id);
   function toast(msg, erro) {
@@ -196,7 +196,7 @@
     mudou = true;
     $('estado').textContent = 'Alterações não salvas';
     $('estado').classList.add('mud');
-    $('salvar').disabled = false;
+    $('salvar').disabled = enviando > 0; // não libera salvar se ainda tem arquivo subindo
   }
   function marcarSalvo() {
     mudou = false;
@@ -458,6 +458,7 @@
       toast(rotulo + ' muito grande (máx ' + maxMB + ' MB). ' + (rotulo === 'vídeo' ? 'Reduza a duração ou a qualidade.' : 'Reduza e tente de novo.'), true);
       return;
     }
+    enviando++; travarSalvar();
     toast('Enviando ' + rotulo + '… (pode levar alguns segundos)');
     const nome = pasta + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
     const b64 = await new Promise((res) => {
@@ -475,6 +476,20 @@
       toast(rotulo.charAt(0).toUpperCase() + rotulo.slice(1) + ' enviado!');
     } catch (e) {
       toast('Falha ao enviar o ' + rotulo + ': ' + e.message, true);
+    } finally {
+      enviando--; travarSalvar();
+    }
+  }
+
+  // enquanto um arquivo sobe, o botão salvar fica bloqueado (senão salva sem o arquivo)
+  function travarSalvar() {
+    if (enviando > 0) {
+      $('salvar').disabled = true;
+      $('estado').textContent = 'Enviando arquivo… aguarde';
+      $('estado').classList.add('mud');
+    } else if (mudou) {
+      $('salvar').disabled = false;
+      $('estado').textContent = 'Alterações não salvas';
     }
   }
 

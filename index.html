@@ -230,7 +230,8 @@
     const media = document.getElementById('media');
     const progress = document.getElementById('progress');
     media.querySelectorAll('.ad').forEach(el => el.remove());
-    ads = (cfg.anuncios || []).map(a => {
+    // ignora anúncio de vídeo/imagem que ficou sem arquivo (senão a tela trava em branco)
+    ads = (cfg.anuncios || []).filter(a => !((a.tipo === 'video' || a.tipo === 'imagem') && !a.url)).map(a => {
       const d = document.createElement('div');
       let video = null;
       if (a.tipo === 'video') {
