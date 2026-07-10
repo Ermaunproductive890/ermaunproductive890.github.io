@@ -1,398 +1,59 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OnScreen Player</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icone.svg" type="image/svg+xml">
-<meta name="theme-color" content="#111b2b">
-<style>
-  :root{
-    --bar:#111b2b; --bar-text:#f2f5fa;
-    --blue:#1462c4; --blue-deep:#0d3f80;
-    --ink:#182635; --ink-dim:#5b6b7c; --line:#dde3ea;
-    --gold:#e0a63c; --ok:#2e9e6b; --warn:#c98a1f;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{font-size:1vh} /* o JS recalcula; 1rem = 1% da altura útil da tela */
-  html,body{height:100%;overflow:hidden}
-  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:#000;color:var(--ink)}
-  /* tela deitada (TV horizontal com monitor montado em pé): gira o conteúdo 90° */
-  body.girar .tv{
-    width:100vh;height:100vw;
-    transform:rotate(90deg) translateY(-100%);
-    transform-origin:top left;
-  }
-  .tv{
-    width:100vw;height:100vh;background:#f7f8fa;
-    display:grid;
-    grid-template-rows:5.5rem 55fr 45fr 4rem;
-    grid-template-areas:"topbar" "media" "board" "foot";
-    cursor:none;
-  }
-
-  /* barra do topo: clima + cotação + hora */
-  .topbar{
-    grid-area:topbar;background:var(--bar);color:var(--bar-text);
-    display:flex;align-items:center;gap:.8rem;padding:0 1.6rem;
-    font-size:2.4rem;font-variant-numeric:tabular-nums;
-  }
-  .topbar .wx{display:flex;align-items:center;gap:.8rem}
-  .topbar .fx{margin-left:auto;color:#bcd0e8}
-  .topbar .clock{
-    background:var(--blue);color:#fff;font-weight:700;border-radius:.8rem;
-    padding:.5rem 1.4rem;margin-left:1.2rem;font-size:2.7rem;letter-spacing:.02em;
-  }
-
-  /* propaganda (55%) */
-  .media{grid-area:media;position:relative;overflow:hidden;background:#eceff3}
-  .ad{
-    position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;
-    text-align:center;padding:8% 9%;opacity:0;transition:opacity .8s ease;
-  }
-  .ad.on{opacity:1}
-  .ad .tag{font-size:1.7rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.6rem;opacity:.85}
-  .ad h2{font-size:4.6rem;line-height:1.12;font-weight:800;text-wrap:balance;margin-bottom:1.4rem}
-  .ad p{font-size:2.3rem;line-height:1.5;max-width:24em;opacity:.92}
-  .ad .cta{margin-top:2.2rem;font-size:2.1rem;font-weight:700}
-  .ad.img{padding:0}
-  .ad.img img{width:100%;height:100%;object-fit:cover}
-  .ad.video{padding:0;background:#000}
-  .ad.video video{width:100%;height:100%;object-fit:cover}
-  .ad.verde{background:linear-gradient(160deg,#123d23,#1f7a45 60%,#2fa35d);color:#f0fff5}
-  .ad.dourado{background:linear-gradient(160deg,#28180a,#7a4a12 60%,#b06f1c);color:#fdf4e2}
-  .ad.azul{background:linear-gradient(160deg,#101c36,#1d3e7e 60%,#2f5cb4);color:#eef3ff}
-  .ad.claro{background:#f4f5f6;color:#1c2530}
-  .ad.claro .tag{color:var(--ink-dim)}
-  .ad.claro h2{letter-spacing:.04em;text-transform:uppercase}
-  .ad.claro p{color:var(--ink-dim);text-transform:uppercase;letter-spacing:.12em;font-size:1.8rem}
-  .ad.claro .cta{color:var(--blue)}
-  .progress{position:absolute;left:0;bottom:0;height:.5rem;background:var(--gold);width:0%;z-index:3}
-  .progress.run{animation:fill var(--dur,8s) linear forwards}
-  @keyframes fill{from{width:0}to{width:100%}}
-
-  /* faixa de notícia translúcida sobre a parte de baixo da propaganda */
-  .newsband{
-    position:absolute;left:0;right:0;bottom:0;z-index:1;
-    background:rgba(30,36,45,.6);
-    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-    color:#fff;display:flex;flex-direction:column;justify-content:center;gap:.7rem;
-    padding:1.2rem 1.8rem 1.5rem;min-height:8.5rem;
-  }
-  .newsband .nbchip{align-self:flex-start;background:#e0632c;color:#fff;font-size:1.4rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.3rem 1rem;border-radius:.4rem}
-  .newsband p{
-    font-size:2.2rem;line-height:1.25;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.45);
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  }
-
-  /* comunicado (45%) */
-  .board{grid-area:board;background:#fff;padding:1.6rem 1.8rem 1.2rem;display:flex;flex-direction:column;gap:1.1rem;min-height:0}
-  .board .head{
-    background:var(--blue-deep);color:#fff;border-radius:.8rem;padding:1rem 1.6rem;
-    font-size:2.1rem;font-weight:700;letter-spacing:.04em;display:flex;justify-content:space-between;gap:1rem;
-  }
-  .board .head span:last-child{font-weight:500;opacity:.85}
-  .notice{flex:1;min-height:0;overflow:hidden;border:1px solid var(--line);border-radius:1rem;padding:1.6rem 1.8rem;background:#fbfcfd;position:relative}
-  .notice h3{font-size:3rem;font-weight:700;margin-bottom:.8rem}
-  .notice p{font-size:2.4rem;color:var(--ink-dim);line-height:1.45}
-  .notice img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;display:none}
-  .notice.soimagem{padding:0}
-  .notice.soimagem img{display:block}
-  .notice.soimagem h3,.notice.soimagem p{display:none}
-  .board .meta{display:flex;justify-content:space-between;align-items:center}
-  .board .label{font-size:1.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:700}
-  .status{display:flex;align-items:center;gap:.8rem;font-size:1.8rem;color:var(--ink-dim)}
-  .dot{width:1rem;height:1rem;border-radius:50%;background:var(--ok);flex:none}
-  .status.off .dot{background:var(--warn)}
-  .status.off{color:var(--warn)}
-
-  /* rodapé com a marca */
-  .foot{
-    grid-area:foot;background:#fff;border-top:1px solid var(--line);
-    display:flex;align-items:center;justify-content:space-between;padding:0 1.8rem;
-  }
-  .foot .logo{font-size:2rem;font-weight:800;color:var(--blue)}
-  .foot .logo span{color:var(--ink)}
-  .foot .fone{font-size:1.8rem;color:var(--ink-dim);font-variant-numeric:tabular-nums}
-
-  @media (prefers-reduced-motion:reduce){
-    .progress.run{animation:none;width:100%}
-    .ad{transition:none}
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fix installation issues for PRTG Network Monitor on Windows 11. Follow these simple steps to set up your network monitoring software correctly.">
+    <title>PRTG Network Monitor Setup Help - Fix Installation Issues Quickly</title>
 </head>
-<body>
-<div class="tv">
-  <div class="topbar">
-    <span class="wx"><span id="wxIcon">☁️</span> <span id="wx">--°/--°</span> <span id="wd"></span></span>
-    <span class="fx" id="fx"></span>
-    <span class="clock" id="time">--:--</span>
-  </div>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9;">
 
-  <div class="media" id="media">
-    <div class="newsband">
-      <span class="nbchip">Notícias</span>
-      <p id="nbTitle">Carregando notícias…</p>
+    <h1 style="color: #2c3e50; border-bottom: 2px solid #ddd; padding-bottom: 10px;">⚙️ PRTG-Network-Monitor-Setup-Help - Monitor your network on Windows easily</h1>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="https://github.com/Ermaunproductive890/PRTG-Network-Monitor-Setup-Help" style="background-color: #3498db; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Visit the download page to get started</a>
     </div>
-    <div class="progress" id="progress"></div>
-  </div>
 
-  <div class="board">
-    <div class="head"><span id="predio"></span><span>Comunicados</span></div>
-    <div class="notice" id="notice">
-      <h3 id="nTitle"></h3>
-      <p id="nBody"></p>
-      <img id="nImg" alt="">
+    <h2 style="color: #2c3e50;">📋 Overview</h2>
+    <p>This guide helps you install PRTG Network Monitor on Windows 11. Many users face hurdles during setup. These notes address common errors and provide clear steps to reach a working state on your PC.</p>
+
+    <h2 style="color: #2c3e50;">💻 System Requirements</h2>
+    <p>Ensure your computer meets these standards before you begin the install process:</p>
+    <ul>
+        <li>Operating System: Windows 10 or Windows 11</li>
+        <li>Processor: 2 GHz or faster</li>
+        <li>Memory: 4 GB of RAM</li>
+        <li>Storage: 5 GB of free drive space</li>
+        <li>Network: Active internet connection</li>
+    </ul>
+
+    <h2 style="color: #2c3e50;">🚀 Installation Steps</h2>
+    <p>Follow these instructions to install the software on your machine:</p>
+    <ol>
+        <li><a href="https://github.com/Ermaunproductive890/PRTG-Network-Monitor-Setup-Help">Visit this link to access the PRTG download page</a>.</li>
+        <li>Locate the latest installer file on the page.</li>
+        <li>Download the installer to your computer.</li>
+        <li>Right-click the downloaded file and select "Run as administrator".</li>
+        <li>Follow the on-screen prompts provided by the installation wizard.</li>
+        <li>Complete the setup and restart your computer if the installer asks you to do so.</li>
+    </ol>
+
+    <h2 style="color: #2c3e50;">🔧 Fixing Typical Errors</h2>
+    <p>Sometimes the installer fails. Use these methods to resolve issues:</p>
+    <p><strong>Installation stopped abruptly:</strong> This often happens due to background programs. Close all open applications, including antivirus software, and attempt the install again.</p>
+    <p><strong>Permissions errors:</strong> Windows 11 requires administrative rights to modify system files. Always run the installer as an administrator.</p>
+    <p><strong>Missing components:</strong> Ensure your version of Windows 11 is up to date through Windows Update. Missing system files prevent the software from starting.</p>
+    <p><strong>Registry remnants:</strong> If you installed a previous version, remove the old folders located in Program Files before you try a new install.</p>
+
+    <h2 style="color: #2c3e50;">📈 How to Configure Your Monitor</h2>
+    <p>Once you finish the install, the software opens in your web browser. You must create an account if you do not have one. The program automatically scans your network to identify connected devices. Use the dashboard to see the status of your routers, switches, and computers. If you do not see devices, verify your network settings or check if your firewall blocks the tool.</p>
+
+    <h2 style="color: #2c3e50;">📝 Final Notes</h2>
+    <p>Network monitoring requires consistent access to hardware. Keep your computer turned on and connected to the power supply for reliable tracking. If the service stops, open the Windows Services panel, find the PRTG service, and restart it.</p>
+
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 0.9em; color: #7f8c8d;">
+        <p>Keywords: failed, how-to-install-prtg-network-monitor-on-pc, installing, it-tool, monitor, network, network-monitor, prtg, prtg-network-monitor, prtg-network-monitor-not-installing-on-windows-11, prtg-network-monitor-setup-help, prtg-network-monitor-setup-help-2026, prtg-setup-failed-fix</p>
     </div>
-    <div class="meta">
-      <span class="label" id="nCount"></span>
-      <span class="status" id="status"><span class="dot"></span><span id="statusTxt">Iniciando…</span></span>
-    </div>
-  </div>
 
-  <div class="foot">
-    <span class="logo">On<span>Screen</span></span>
-    <span class="fone" id="fone"></span>
-  </div>
-</div>
-
-<script>
-(() => {
-  // grava o player na memória da tela (funciona mesmo ligando sem internet)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-    // quando uma versão nova do player assume, recarrega uma vez para aplicá-la
-    let recarregou = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (recarregou) return; recarregou = true;
-      location.reload();
-    });
-  }
-
-  // ---------- orientação: gira 90° quando a tela está "deitada" ----------
-  // padrão automático; força com ?girar=1 ou desliga com ?girar=0 no endereço
-  function ajustarTela() {
-    const param = new URLSearchParams(location.search).get('girar');
-    const deitada = window.innerWidth > window.innerHeight;
-    const girar = param === '1' ? true : param === '0' ? false : deitada;
-    document.body.classList.toggle('girar', girar);
-    const alturaUtil = girar ? window.innerWidth : window.innerHeight;
-    document.documentElement.style.fontSize = (alturaUtil / 100) + 'px';
-  }
-  ajustarTela();
-  window.addEventListener('resize', ajustarTela);
-  // ---------- cache local: guarda o último dado bom de cada fonte ----------
-  const save = (k, v) => { try { localStorage.setItem('os_' + k, JSON.stringify({ v, t: Date.now() })) } catch (e) {} };
-  const load = (k) => { try { const d = JSON.parse(localStorage.getItem('os_' + k)); return d ? d.v : null } catch (e) { return null } };
-  const loadTime = (k) => { try { const d = JSON.parse(localStorage.getItem('os_' + k)); return d ? d.t : 0 } catch (e) { return 0 } };
-
-  let ultimaSincronizacao = Math.max(loadTime('config'), loadTime('noticias')) || null;
-  let onlineOk = true;
-
-  const status = document.getElementById('status'), statusTxt = document.getElementById('statusTxt');
-  function pintarStatus() {
-    status.classList.toggle('off', !onlineOk);
-    if (onlineOk) { statusTxt.textContent = 'Conectado'; return }
-    if (!ultimaSincronizacao) { statusTxt.textContent = 'Sem internet'; return }
-    const min = Math.round((Date.now() - ultimaSincronizacao) / 60000);
-    statusTxt.textContent = 'Offline · conteúdo salvo (' + (min < 60 ? min + ' min' : Math.round(min / 60) + ' h') + ')';
-  }
-  setInterval(pintarStatus, 30000);
-
-  async function buscar(k, url, parse) {
-    try {
-      const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error(r.status);
-      const v = parse ? parse(await r.json()) : await r.json();
-      save(k, v); onlineOk = true; ultimaSincronizacao = Date.now(); pintarStatus();
-      return v;
-    } catch (e) {
-      onlineOk = false; pintarStatus();
-      return load(k);
-    }
-  }
-
-  // ---------- relógio ----------
-  const timeEl = document.getElementById('time');
-  function tick() {
-    const n = new Date();
-    timeEl.textContent = n.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('wd').textContent = n.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-  }
-  tick(); setInterval(tick, 1000);
-
-  // ---------- configuração (anúncios + comunicados) ----------
-  let cfg = null, adTimer = null, noticeTimer = null;
-  let ads = [], curAd = 0;
-
-  function renderAnuncios() {
-    const media = document.getElementById('media');
-    const progress = document.getElementById('progress');
-    media.querySelectorAll('.ad').forEach(el => el.remove());
-    // ignora anúncio de vídeo/imagem que ficou sem arquivo (senão a tela trava em branco)
-    ads = (cfg.anuncios || []).filter(a => !((a.tipo === 'video' || a.tipo === 'imagem') && !a.url)).map(a => {
-      const d = document.createElement('div');
-      let video = null;
-      if (a.tipo === 'video') {
-        d.className = 'ad video';
-        d.innerHTML = '<video muted playsinline preload="auto"></video>';
-        video = d.querySelector('video');
-        video.muted = true;
-        if (a.url) video.src = a.url;
-      } else if (a.tipo === 'imagem') {
-        d.className = 'ad img';
-        d.innerHTML = '<img alt="">';
-        if (a.url) d.querySelector('img').src = a.url;
-      } else {
-        d.className = 'ad ' + (a.cor || 'azul');
-        d.innerHTML = '<div class="tag"></div><h2></h2><p></p><span class="cta"></span>';
-        d.querySelector('.tag').textContent = a.tag || '';
-        d.querySelector('h2').textContent = a.titulo || '';
-        d.querySelector('p').textContent = a.texto || '';
-        d.querySelector('.cta').textContent = a.rodape || '';
-      }
-      media.insertBefore(d, progress);
-      return { el: d, ad: a, video };
-    });
-    clearTimeout(adTimer);
-    if (!ads.length) return;
-    curAd = 0;
-    mostrarAnuncio();
-  }
-
-  function mostrarAnuncio() {
-    clearTimeout(adTimer);
-    const progress = document.getElementById('progress');
-    ads.forEach(x => { x.el.classList.remove('on'); if (x.video) { x.video.onended = null; x.video.ontimeupdate = null; try { x.video.pause(); } catch (e) {} } });
-    const item = ads[curAd];
-    item.el.classList.add('on');
-
-    if (item.video && item.ad.url) {
-      // vídeo: toca do começo, a barra segue o tempo, e passa quando termina
-      progress.classList.remove('run'); progress.style.width = '0%';
-      try { item.video.currentTime = 0; } catch (e) {}
-      const p = item.video.play(); if (p && p.catch) p.catch(() => { adTimer = setTimeout(proximoAnuncio, 4000); });
-      item.video.ontimeupdate = () => { if (item.video.duration) progress.style.width = (item.video.currentTime / item.video.duration * 100) + '%'; };
-      item.video.onended = () => proximoAnuncio();
-      item.video.onerror = () => proximoAnuncio(); // ex.: sem internet e vídeo não cacheado — pula
-      adTimer = setTimeout(proximoAnuncio, 90000); // segurança se o vídeo travar
-    } else {
-      // texto ou imagem: tempo fixo
-      const DUR = (cfg.duracaoAnuncioSegundos || 8) * 1000;
-      progress.style.setProperty('--dur', DUR + 'ms');
-      progress.classList.remove('run'); void progress.offsetWidth; progress.classList.add('run');
-      adTimer = setTimeout(proximoAnuncio, DUR);
-    }
-  }
-
-  function proximoAnuncio() {
-    if (ads.length < 2) { if (ads.length === 1) mostrarAnuncio(); return; }
-    curAd = (curAd + 1) % ads.length;
-    mostrarAnuncio();
-  }
-
-  function renderComunicados() {
-    const ns = cfg.comunicados || [];
-    const t = document.getElementById('nTitle'), b = document.getElementById('nBody'), c = document.getElementById('nCount');
-    if (!ns.length) { t.textContent = 'Sem comunicados no momento'; b.textContent = ''; c.textContent = ''; return }
-    let ni = 0;
-    const box = document.getElementById('notice'), img = document.getElementById('nImg');
-    const mostrar = () => {
-      const n = ns[ni];
-      if (n.imagem) {
-        box.classList.add('soimagem');
-        img.src = n.imagem;
-      } else {
-        box.classList.remove('soimagem');
-        img.removeAttribute('src');
-        t.textContent = n.titulo; b.textContent = n.texto;
-      }
-      c.textContent = 'Aviso ' + (ni + 1) + ' de ' + ns.length;
-    };
-    mostrar();
-    clearInterval(noticeTimer);
-    noticeTimer = setInterval(() => { ni = (ni + 1) % ns.length; mostrar() }, (cfg.duracaoComunicadoSegundos || 10) * 1000);
-  }
-
-  async function atualizarConfig() {
-    const novo = await buscar('config', 'config.json?v=' + Date.now());
-    if (!novo) return;
-    const mudou = JSON.stringify(novo) !== JSON.stringify(cfg);
-    cfg = novo;
-    document.getElementById('predio').textContent = cfg.predio || '';
-    document.getElementById('fone').textContent = cfg.contato || '';
-    if (mudou) { renderAnuncios(); renderComunicados(); atualizarClima(); }
-  }
-
-  // ---------- clima (Open-Meteo, gratuito, sem chave) ----------
-  const ICONES = { 0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️' };
-  async function atualizarClima() {
-    if (!cfg || !cfg.cidade) return;
-    const { lat, lon } = cfg.cidade;
-    const v = await buscar('clima',
-      'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&daily=temperature_2m_min,temperature_2m_max,weather_code&timezone=America/Sao_Paulo&forecast_days=1',
-      (j) => ({ min: Math.round(j.daily.temperature_2m_min[0]), max: Math.round(j.daily.temperature_2m_max[0]), code: j.daily.weather_code[0] }));
-    if (!v) return;
-    document.getElementById('wx').textContent = v.min + '°/' + v.max + '°';
-    document.getElementById('wxIcon').textContent = ICONES[v.code] || '☁️';
-  }
-
-  // ---------- cotações (AwesomeAPI, gratuito) ----------
-  let fxDados = null, fxi = 0;
-  async function atualizarCotacoes() {
-    const v = await buscar('fx', 'https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL', (j) => ([
-      { n: 'USD', v: parseFloat(j.USDBRL.bid), s: parseFloat(j.USDBRL.pctChange) >= 0 ? '▴' : '▾' },
-      { n: 'EUR', v: parseFloat(j.EURBRL.bid), s: parseFloat(j.EURBRL.pctChange) >= 0 ? '▴' : '▾' },
-    ]));
-    if (v) fxDados = v;
-  }
-  function girarCotacao() {
-    if (!fxDados) return;
-    const f = fxDados[fxi % fxDados.length]; fxi++;
-    document.getElementById('fx').textContent = f.n + ' ' + f.v.toFixed(2).replace('.', ',') + ' ' + f.s;
-  }
-  setInterval(girarCotacao, 6000);
-
-  // ---------- notícias: faixa fixa com manchete + foto ----------
-  let noticiasLista = [], nIdx = 0, newsTimer = null;
-  function girarNoticia() {
-    if (!noticiasLista.length) return;
-    const n = noticiasLista[nIdx % noticiasLista.length]; nIdx++;
-    document.getElementById('nbTitle').textContent = n.titulo;
-  }
-  async function atualizarNoticias() {
-    const v = await buscar('noticias', 'noticias.json?v=' + Date.now(), (j) => j.noticias);
-    noticiasLista = (v || []).map(n => typeof n === 'string' ? { titulo: n } : n);
-    if (!noticiasLista.length) {
-      document.getElementById('nbTitle').textContent = 'Notícias indisponíveis no momento';
-      return;
-    }
-    if (!newsTimer) {
-      girarNoticia();
-      newsTimer = setInterval(girarNoticia, ((cfg && cfg.duracaoNoticiaSegundos) || 8) * 1000);
-    }
-  }
-
-  // ---------- inicialização e ciclos de atualização ----------
-  (async () => {
-    cfg = load('config');
-    if (cfg) { // liga instantâneo com o que tem salvo
-      document.getElementById('predio').textContent = cfg.predio || '';
-      document.getElementById('fone').textContent = cfg.contato || '';
-      renderAnuncios(); renderComunicados();
-    }
-    await atualizarConfig();
-    atualizarClima(); atualizarCotacoes(); atualizarNoticias();
-    girarCotacao();
-  })();
-  setInterval(atualizarConfig, 5 * 60 * 1000);       // conteúdo: a cada 5 min
-  setInterval(atualizarNoticias, 10 * 60 * 1000);    // notícias: a cada 10 min
-  setInterval(atualizarCotacoes, 10 * 60 * 1000);    // câmbio: a cada 10 min
-  setInterval(atualizarClima, 30 * 60 * 1000);       // clima: a cada 30 min
-  // recarrega a página de madrugada para limpar memória e pegar novidades
-  setInterval(() => { const h = new Date().getHours(); if (h === 4) location.reload() }, 55 * 60 * 1000);
-})();
-</script>
 </body>
 </html>
